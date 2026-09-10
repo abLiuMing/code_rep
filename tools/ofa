@@ -1,0 +1,63 @@
+#!/bin/sh
+set -eu
+
+root=$(CDPATH= cd -- "$(dirname "$0")/.." && pwd)
+command=${1:-help}
+
+sync_resources() {
+  git -C "$root" submodule update --init --recursive
+}
+
+prepare_resources() {
+  sync_resources
+  # shellcheck disable=SC1091
+  . "$root/resource.lock"
+  manifest_file="$root/deps/resource_config/manifests/$manifest"
+  cache_dir="$root/.resource-cache"
+  artifact_base=${RESOURCE_BASE_URL:-"$root/../artifact-store"}
+  mkdir -p "$cache_dir"
+
+  while read -r name version artifact checksum; do
+    case "$name" in ''|'#'*) continue ;; esac
+    target="$cache_dir/$artifact"
+    mkdir -p "$(dirname "$target")"
+    if [ ! -f "$target" ] || [ "$(shasum -a 256 "$target" | awk '{print $1}')" != "$checksum" ]; then
+      echo "fetching $name $version"
+      case "$artifact_base" in
+        http://*|https://*) curl -fL "$artifact_base/$artifact" -o "$target.tmp" ;;
+        *) cp "$artifact_base/$artifact" "$target.tmp" ;;
+      esac
+      actual=$(shasum -a 256 "$target.tmp" | awk '{print $1}')
+      [ "$actual" = "$checksum" ] || { rm -f "$target.tmp"; echo "checksum mismatch" >&2; exit 1; }
+      mv "$target.tmp" "$target"
+    else
+      echo "cache hit: $name $version"
+    fi
+  done < "$manifest_file"
+}
+
+build_resources() {
+  prepare_resources
+  . "$root/resource.lock"
+  manifest_file="$root/deps/resource_config/manifests/$manifest"
+  output="$root/build/generated_resources"
+  "$root/deps/resource_config/scripts/build_resources.sh" "$manifest_file" "$root/.resource-cache" "$output"
+}
+
+case "$command" in
+  sync) sync_resources ;;
+  prepare) prepare_resources ;;
+  build) build_resources ;;
+  run) build_resources; "$root/src/main.sh" ;;
+  switch)
+    [ "$#" -eq 2 ] || { echo "usage: $0 switch <branch>" >&2; exit 2; }
+    git -C "$root" switch "$2"
+    sync_resources
+    ;;
+  status)
+    git -C "$root" status --short
+    git -C "$root/deps/resource_config" rev-parse --short HEAD
+    ;;
+  *) echo "usage: $0 {sync|prepare|build|run|switch <branch>|status}" ;;
+esac
+

@@ -1,3 +1,3 @@
 [submodule "deps/resource_config"]
 	path = deps/resource_config
-	url = ../repB-res
+	url = https://github.com/abLiuMing/res_rep.git

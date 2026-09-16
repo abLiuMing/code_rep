@@ -20,3 +20,8 @@ Windows PowerShell:
 ```
 
 Windows CMD can use `tools\ofa.cmd` with the same arguments.
+
+## Documentation
+
+- [中文使用教程](README_USAGE_CN.md)
+- [技术设计与可行性评审](docs/TECHNICAL_DESIGN_CN.md)

@@ -1,0 +1,49 @@
+name: Cross-platform resource workflow
+
+on:
+  push:
+    branches: [main, project-q3-8870]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  posix:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Run current branch
+        run: ./tools/ofa run
+      - name: Switch to main and run
+        run: |
+          ./tools/ofa switch main
+          ./tools/ofa run
+      - name: Switch to Q3 and run
+        run: |
+          ./tools/ofa switch project-q3-8870
+          ./tools/ofa run
+
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Run current branch
+        shell: powershell
+        run: .\tools\ofa.ps1 run
+      - name: Switch to main and run
+        shell: powershell
+        run: |
+          .\tools\ofa.ps1 switch main
+          .\tools\ofa.ps1 run
+      - name: Switch to Q3 and run
+        shell: powershell
+        run: |
+          .\tools\ofa.ps1 switch project-q3-8870
+          .\tools\ofa.ps1 run

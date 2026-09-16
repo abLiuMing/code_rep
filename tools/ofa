@@ -14,7 +14,7 @@ prepare_resources() {
   . "$root/resource.lock"
   manifest_file="$root/deps/resource_config/manifests/$manifest"
   cache_dir="$root/.resource-cache"
-  artifact_base=${RESOURCE_BASE_URL:-"$root/../artifact-store"}
+  artifact_base=${RESOURCE_BASE_URL:-"https://raw.githubusercontent.com/abLiuMing/res_rep/demo-artifacts"}
   mkdir -p "$cache_dir"
 
   while read -r name version artifact checksum; do
@@ -60,4 +60,3 @@ case "$command" in
     ;;
   *) echo "usage: $0 {sync|prepare|build|run|switch <branch>|status}" ;;
 esac
-

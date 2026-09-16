@@ -4,6 +4,30 @@ set -eu
 root=$(CDPATH= cd -- "$(dirname "$0")/.." && pwd)
 command=${1:-help}
 
+sha256_file() {
+  if command -v sha256sum >/dev/null 2>&1; then
+    sha256sum "$1" | awk '{print $1}'
+  elif command -v shasum >/dev/null 2>&1; then
+    shasum -a 256 "$1" | awk '{print $1}'
+  else
+    echo "missing SHA-256 tool: install sha256sum or shasum" >&2
+    exit 1
+  fi
+}
+
+download_file() {
+  source_url=$1
+  destination=$2
+  if command -v curl >/dev/null 2>&1; then
+    curl -fL "$source_url" -o "$destination"
+  elif command -v wget >/dev/null 2>&1; then
+    wget -O "$destination" "$source_url"
+  else
+    echo "missing download tool: install curl or wget" >&2
+    exit 1
+  fi
+}
+
 sync_resources() {
   git -C "$root" submodule update --init --recursive
 }
@@ -21,13 +45,13 @@ prepare_resources() {
     case "$name" in ''|'#'*) continue ;; esac
     target="$cache_dir/$artifact"
     mkdir -p "$(dirname "$target")"
-    if [ ! -f "$target" ] || [ "$(shasum -a 256 "$target" | awk '{print $1}')" != "$checksum" ]; then
+    if [ ! -f "$target" ] || [ "$(sha256_file "$target")" != "$checksum" ]; then
       echo "fetching $name $version"
       case "$artifact_base" in
-        http://*|https://*) curl -fL "$artifact_base/$artifact" -o "$target.tmp" ;;
+        http://*|https://*) download_file "$artifact_base/$artifact" "$target.tmp" ;;
         *) cp "$artifact_base/$artifact" "$target.tmp" ;;
       esac
-      actual=$(shasum -a 256 "$target.tmp" | awk '{print $1}')
+      actual=$(sha256_file "$target.tmp")
       [ "$actual" = "$checksum" ] || { rm -f "$target.tmp"; echo "checksum mismatch" >&2; exit 1; }
       mv "$target.tmp" "$target"
     else

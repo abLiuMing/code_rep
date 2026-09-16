@@ -27,6 +27,23 @@ repB 通过 Git submodule 放在 repA 的 `deps/resource_config` 目录中。大
 - `curl`（使用 HTTP/HTTPS 制品库时）；
 - `shasum`（用于 SHA-256 校验）。
 
+Ubuntu 使用 `sha256sum`，macOS 使用 `shasum`，脚本会自动选择。Windows 使用系统自带的 Windows PowerShell 5.1 或更高版本，以及 Git for Windows。
+
+各平台入口：
+
+```bash
+# Ubuntu / macOS
+./tools/ofa run
+```
+
+```powershell
+# Windows PowerShell
+.\tools\ofa.ps1 run
+
+# 或 CMD
+tools\ofa.cmd run
+```
+
 正式接入后，还需要具备：
 
 - repA 的 Git 访问权限；
@@ -597,6 +614,20 @@ cd code_rep
 ./tools/ofa status
 git status
 git -C deps/resource_config status
+```
+
+Windows PowerShell 对应命令：
+
+```powershell
+git clone --recurse-submodules https://github.com/abLiuMing/code_rep.git
+Set-Location code_rep
+
+.\tools\ofa.ps1 sync
+.\tools\ofa.ps1 switch main
+.\tools\ofa.ps1 prepare
+.\tools\ofa.ps1 build
+.\tools\ofa.ps1 run
+.\tools\ofa.ps1 status
 ```
 
 ## 16. 当前 PoC 与正式接入的差异
